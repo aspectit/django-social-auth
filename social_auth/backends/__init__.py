@@ -248,12 +248,11 @@ class SocialAuthBackend(ModelBackend):
 
         Riase DoesNotExist exception if no entry.
         """
-        social_user = UserSocialAuth.objects.select_related('user')\
-                                     .get(provider=self.name, uid=uid)
-        # Kind of a hack - ensure what we have is within the User
-        # default queryset, which may be restricted.
-        if not User.objects.filter(pk=social_user.user.id):
-             raise UserSocialAuth.DoesNotExist()
+        # Kind of a hack - but we want to ensure what we have is within
+        # the User default queryset, which may be restricted.
+        user = User.objects.get(social_auth__provider=self.name, 
+                                social_auth__uid=uid)
+        social_user = user.social_auth.get(provider=self.name, uid=uid)
         return social_user
 
     def get_user_id(self, details, response):
