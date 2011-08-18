@@ -24,13 +24,14 @@ RECOMMENDED_METHODS = ('is_authenticated',)
 if getattr(settings, 'SOCIAL_AUTH_USER_MODEL', None):
     User = models.get_model(*settings.SOCIAL_AUTH_USER_MODEL.rsplit('.', 1))
 
-    missing = list(set(RECOMMENDED_FIELDS) -
-                   set(User._meta.get_all_field_names())) + \
-              [name for name in RECOMMENDED_METHODS
-                      if not callable(getattr(User, name, None))]
-    if missing:
-        warnings.warn('Missing recommended attributes or methods '\
-                      'in custom User model: "%s"' % ', '.join(missing))
+    def validate_user_model():
+        missing = list(set(RECOMMENDED_FIELDS) -
+                       set(User._meta.get_all_field_names())) + \
+                  [name for name in RECOMMENDED_METHODS
+                          if not callable(getattr(User, name, None))]
+        if missing:
+            warnings.warn('Missing recommended attributes or methods '\
+                          'in custom User model: "%s"' % ', '.join(missing))
 else:
     from django.contrib.auth.models import User
 
@@ -87,3 +88,20 @@ class Association(models.Model):
     def __unicode__(self):
         """Unicode representation"""
         return '%s %s' % (self.handle, self.issued)
+
+
+
+# Delay validation of a custom user model until we actually
+# have defined our UserSocialAuth model with it's ForeignKey
+# to that User model. Otherwise, the validation will trigger
+# caching mechanisms on the User model class to cache related
+# models, and those caches then would not include the still
+# undefined UserSocialAuth model. As a result, we could not
+# do things like: User.objects.get(social_auth__uid=1)
+# See also: https://github.com/omab/django-social-auth/issues/126
+try:
+    validate_user_model
+except NameError:
+    pass
+else:
+    validate_user_model()
