@@ -44,7 +44,7 @@ class UserSocialAuth(models.Model):
 
     class Meta:
         """Meta data"""
-        unique_together = ('provider', 'uid')
+        unique_together = ('user', 'provider', 'uid')
 
     def __unicode__(self):
         """Return associated user unicode representation"""
