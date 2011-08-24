@@ -250,9 +250,12 @@ class SocialAuthBackend(ModelBackend):
         """
         # Kind of a hack - but we want to ensure what we have is within
         # the User default queryset, which may be restricted.
-        user = User.objects.get(social_auth__provider=self.name, 
-                                social_auth__uid=uid)
-        social_user = user.social_auth.get(provider=self.name, uid=uid)
+        try:
+            user = User.objects.get(social_auth__provider=self.name, 
+                                    social_auth__uid=uid)
+            social_user = user.social_auth.get(provider=self.name, uid=uid)
+        except User.DoesNotExist, e:
+            raise UserSocialAuth.DoesNotExist(e)
         return social_user
 
     def get_user_id(self, details, response):
